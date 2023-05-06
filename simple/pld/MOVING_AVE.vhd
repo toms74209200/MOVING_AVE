@@ -13,8 +13,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-use STD.textio.all;
-use IEEE.std_logic_textio.all;
 
 entity MOVING_AVE is
     generic(
@@ -43,16 +41,28 @@ constant TAP            : integer := 128;                               -- Movin
 
 -- Internal signals --
 type    DataArrayType   is array(0 to TAP-1) of std_logic_vector(DW-1 downto 0);
-type    SumArrayType    is array(0 to TAP-1) of std_logic_vector(DW+TAP-1 downto 0);
+type    Sum1ArrayType   is array(0 to TAP/2-1) of std_logic_vector(DW downto 0);
+type    Sum2ArrayType   is array(0 to TAP/4-1) of std_logic_vector(DW+1 downto 0);
+type    Sum3ArrayType   is array(0 to TAP/8-1) of std_logic_vector(DW+2 downto 0);
+type    Sum4ArrayType   is array(0 to TAP/16-1) of std_logic_vector(DW+3 downto 0);
+type    Sum5ArrayType   is array(0 to TAP/32-1) of std_logic_vector(DW+4 downto 0);
+type    Sum6ArrayType   is array(0 to TAP/64-1) of std_logic_vector(DW+5 downto 0);
 signal  data_array      : DataArrayType;                                -- Data array
-signal  sum_array       : SumArrayType;                                 -- Summation data array
+signal  sum_1_array     : Sum1ArrayType;                                -- Summation data array
+signal  sum_2_array     : Sum2ArrayType;                                -- Summation data array
+signal  sum_3_array     : Sum3ArrayType;                                -- Summation data array
+signal  sum_4_array     : Sum4ArrayType;                                -- Summation data array
+signal  sum_5_array     : Sum5ArrayType;                                -- Summation data array
+signal  sum_6_array     : Sum6ArrayType;                                -- Summation data array
+signal  sum_7           : std_logic_vector(DW+6 downto 0);              -- Summation data array
+signal  aso_valid_i     : std_logic_vector(7 downto 0);                 -- Avalon-ST source data valid
 
 begin
 
 -- ============================================================================
 --  Ready output
 -- ============================================================================
-ASI_READY <= not RESET_n;
+ASI_READY <= RESET_n;
 
 
 -- ============================================================================
@@ -63,55 +73,133 @@ ASO_ERROR <= '0';
 -- ============================================================================
 --  Valid output
 -- ============================================================================
-ASO_VALID <= ASI_VALID;
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        aso_valid_i <= (others => '0');
+    elsif (CLK'event and CLK = '1') then
+        aso_valid_i(0) <= ASI_VALID;
+        aso_valid_i(7 downto 1) <= aso_valid_i(6 downto 0);
+    end if;
+end process;
+
+ASO_VALID <= aso_valid_i(7);
 
 
 -- ============================================================================
 --  Data register
 -- ============================================================================
 process (CLK, RESET_n) begin
-    for i in 0 to TAP-1 loop
-        if (RESET_n = '0') then
-            data_array(i) <= (others => '0');
-        elsif (CLK'event and CLK = '1') then
-            if (ASI_VALID = '1') then
-                data_array(i) <= ASI_DATA;
-            end if;
+    if (RESET_n = '0') then
+        data_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            data_array(0) <= ASI_DATA;
+            for i in 1 to TAP-1 loop
+                data_array(i) <= data_array(i-1);
+        end loop;
         end if;
-    end loop;
+    end if;
 end process;
 
 
 -- ============================================================================
 --  Summation
 -- ============================================================================
+--1st adder
 process (CLK, RESET_n) begin
     if (RESET_n = '0') then
-        sum_array(0) <= (others => '0');
+        sum_1_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            sum_array(0) <= (X"0000_0000_0000_0000_0000_0000_0000" & data_array(0)) + (X"0000_0000_0000_0000_0000_0000_0000_0000" & data_array(1));
+            for i in 1 to TAP/2-1 loop
+                sum_1_array(i) <= ('0' & data_array(i*2)) + ('0' & data_array(i*2-1));
+            end loop;
         end if;
     end if;
 end process;
 
+--2nd adder
 process (CLK, RESET_n) begin
-    for i in 1 to TAP-1 loop
-        if (RESET_n = '0') then
-            sum_array(i) <= (others => '0');
-        elsif (CLK'event and CLK = '1') then
-            if (ASI_VALID = '1') then
-                sum_array(i) <= data_array(i) + sum_array(i-1);
-            end if;
+    if (RESET_n = '0') then
+        sum_2_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/4-1 loop
+                sum_2_array(i) <= ('0' & sum_1_array(i*2)) + ('0' & sum_1_array(i*2-1));
+            end loop;
         end if;
-    end loop;
+    end if;
 end process;
 
+--3rd adder
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        sum_3_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/8-1 loop
+                sum_3_array(i) <= ('0' & sum_2_array(i*2)) + ('0' & sum_2_array(i*2-1));
+            end loop;
+        end if;
+    end if;
+end process;
+
+--4th adder
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        sum_4_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/16-1 loop
+                sum_4_array(i) <= ('0' & sum_3_array(i*2)) + ('0' & sum_3_array(i*2-1));
+            end loop;
+        end if;
+    end if;
+end process;
+
+--5th adder
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        sum_5_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/32-1 loop
+                sum_5_array(i) <= ('0' & sum_4_array(i*2)) + ('0' & sum_4_array(i*2-1));
+            end loop;
+        end if;
+    end if;
+end process;
+
+--6th adder
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        sum_6_array <= (others => (others => '0'));
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/64-1 loop
+                sum_6_array(i) <= ('0' & sum_5_array(i*2)) + ('0' & sum_5_array(i*2-1));
+            end loop;
+        end if;
+    end if;
+end process;
+
+--7th adder
+process (CLK, RESET_n) begin
+    if (RESET_n = '0') then
+        sum_7 <= (others => '0');
+    elsif (CLK'event and CLK = '1') then
+        if (ASI_VALID = '1') then
+            for i in 1 to TAP/64-1 loop
+                sum_7 <= ('0' & sum_6_array(1)) + ('0' & sum_6_array(0));
+            end loop;
+        end if;
+    end if;
+end process;
 
 -- ============================================================================
 --  Data output
 -- ============================================================================
-ASO_DATA <= sum_array(TAP-1)(DW+TAP-1 downto TAP);
+ASO_DATA <= sum_7(DW+6 downto DW-9) when (aso_valid_i(7) = '1') else (others => '0');
 
 
 end RTL; --MOVING_AVE

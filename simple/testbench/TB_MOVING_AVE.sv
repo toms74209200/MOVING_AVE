@@ -45,8 +45,10 @@ bit [15:0] ave_data_rom[1:1024];
 
 int raw_file;
 int ave_file;
-string line;
-int count = 0;
+string raw_line;
+string ave_line;
+int raw_count = 1;
+int ave_count = 1;
 
 // module
 MOVING_AVE U_MOVING_AVE(
@@ -63,12 +65,12 @@ MOVING_AVE U_MOVING_AVE(
  * Input data file read
  *============================================================================*/
 initial begin
-    count = 0;
+    raw_count = 1;
     raw_file = $fopen("raw_data.txt", "r");
     while (!$feof(raw_file)) begin
-        if ($fgets(line, raw_file)) begin
-            raw_data_rom[count] = line.atoi();
-            count++;
+        if ($fgets(raw_line, raw_file)) begin
+            raw_data_rom[raw_count] = raw_line.atoi();
+            raw_count++;
         end
     end
     $fclose(raw_file);
@@ -79,12 +81,12 @@ end
  * Expected data file read
  *============================================================================*/
 initial begin
-    count = 0;
+    ave_count = 1;
     ave_file = $fopen("ave_data.txt", "r");
     while (!$feof(ave_file)) begin
-        if ($fgets(line, ave_file)) begin
-            ave_data_rom[count] = line.atoi();
-            count++;
+        if ($fgets(ave_line, ave_file)) begin
+            ave_data_rom[ave_count] = ave_line.atoi();
+            ave_count++;
         end
     end
     $fclose(ave_file);
@@ -130,6 +132,11 @@ initial begin
     for (int i=1;i<1024;i++) begin
         @(posedge CLK);
         ASI_DATA = raw_data_rom[i];
+    end
+end
+
+initial begin
+    for (int i=1;i<1024;i++) begin
         @(posedge CLK);
         wait(ASO_VALID);
         `ChkValue("ASO_DATA", ASO_DATA, ave_data_rom[i]);
