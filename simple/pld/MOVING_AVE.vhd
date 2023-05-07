@@ -111,8 +111,8 @@ process (CLK, RESET_n) begin
         sum_1_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/2-1 loop
-                sum_1_array(i) <= ('0' & data_array(i*2)) + ('0' & data_array(i*2-1));
+            for i in 0 to TAP/2-1 loop
+                sum_1_array(i) <= ('0' & data_array(i*2)) + ('0' & data_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -124,8 +124,8 @@ process (CLK, RESET_n) begin
         sum_2_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/4-1 loop
-                sum_2_array(i) <= ('0' & sum_1_array(i*2)) + ('0' & sum_1_array(i*2-1));
+            for i in 0 to TAP/4-1 loop
+                sum_2_array(i) <= ('0' & sum_1_array(i*2)) + ('0' & sum_1_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -137,8 +137,8 @@ process (CLK, RESET_n) begin
         sum_3_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/8-1 loop
-                sum_3_array(i) <= ('0' & sum_2_array(i*2)) + ('0' & sum_2_array(i*2-1));
+            for i in 0 to TAP/8-1 loop
+                sum_3_array(i) <= ('0' & sum_2_array(i*2)) + ('0' & sum_2_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -150,8 +150,8 @@ process (CLK, RESET_n) begin
         sum_4_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/16-1 loop
-                sum_4_array(i) <= ('0' & sum_3_array(i*2)) + ('0' & sum_3_array(i*2-1));
+            for i in 0 to TAP/16-1 loop
+                sum_4_array(i) <= ('0' & sum_3_array(i*2)) + ('0' & sum_3_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -163,8 +163,8 @@ process (CLK, RESET_n) begin
         sum_5_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/32-1 loop
-                sum_5_array(i) <= ('0' & sum_4_array(i*2)) + ('0' & sum_4_array(i*2-1));
+            for i in 0 to TAP/32-1 loop
+                sum_5_array(i) <= ('0' & sum_4_array(i*2)) + ('0' & sum_4_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -176,8 +176,8 @@ process (CLK, RESET_n) begin
         sum_6_array <= (others => (others => '0'));
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/64-1 loop
-                sum_6_array(i) <= ('0' & sum_5_array(i*2)) + ('0' & sum_5_array(i*2-1));
+            for i in 0 to TAP/64-1 loop
+                sum_6_array(i) <= ('0' & sum_5_array(i*2)) + ('0' & sum_5_array(i*2+1));
             end loop;
         end if;
     end if;
@@ -189,9 +189,7 @@ process (CLK, RESET_n) begin
         sum_7 <= (others => '0');
     elsif (CLK'event and CLK = '1') then
         if (ASI_VALID = '1') then
-            for i in 1 to TAP/64-1 loop
-                sum_7 <= ('0' & sum_6_array(1)) + ('0' & sum_6_array(0));
-            end loop;
+            sum_7 <= ('0' & sum_6_array(1)) + ('0' & sum_6_array(0));
         end if;
     end if;
 end process;
