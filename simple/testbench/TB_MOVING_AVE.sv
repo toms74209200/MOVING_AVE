@@ -40,7 +40,7 @@ parameter ClkCyc    = 10;       // Signal change interval(10ns/50MHz)
 parameter ResetTime = 20;       // Reset hold time
 
 // Data rom
-bit [15:0] raw_data_rom[1:1024] = {
+bit [15:0] raw_data_rom[0:1023] = {
     16'h30F4,
     16'h3AAD,
     16'h8581,
@@ -1066,7 +1066,7 @@ bit [15:0] raw_data_rom[1:1024] = {
     16'h4319,
     16'h1E13
 };
-bit [15:0] ave_data_rom[1:1024] = {
+bit [15:0] ave_data_rom[0:1023] = {
     16'h0061,
     16'h00D7,
     16'h01E2,
@@ -2148,49 +2148,46 @@ initial begin
     ASI_DATA = 0;
     @(posedge CLK);
     ASI_VALID = 1'b1;
-    for (int i=1;i<148;i++) begin
+    for (int i=0;i<128;i++) begin
         ASI_DATA = 16'h7fff;
         @(posedge CLK);
     end
-
-    @(posedge CLK);
-    ASI_DATA = 0;
-    for (int i=1;i<138;i++) begin
+    for (int i=0;i<18;i++) begin
         @(posedge CLK);
     end
 
+    @(posedge CLK);
     ASI_DATA = 0;
     ASI_VALID = 1'b0;
-    for (int i=1;i<10;i++) begin
-        @(posedge CLK);
-    end
     @(posedge CLK);
+    RESET_n = 0;
+    @(posedge CLK);
+    RESET_n = 1;
 
     $display("%0s(%0d)Normal data check", `__FILE__, `__LINE__);
     wait(ASI_READY);
-    ASI_DATA = 0;
-    @(negedge CLK);
+    @(posedge CLK);
     ASI_VALID = 1'b1;
-    for (int i=1;i<1024;i++) begin
+    for (int i=0;i<1024;i++) begin
         ASI_DATA = raw_data_rom[i];
-        @(negedge CLK);
+        @(posedge CLK);
     end
 end
 
 initial begin
     wait(ASO_VALID);
-    for (int i=1;i<128;i++) begin
+    for (int i=0;i<128;i++) begin
         @(posedge CLK);
     end
-    for (int i=1;i<10;i++) begin
+    for (int i=0;i<10;i++) begin
         wait(ASO_VALID);
         @(negedge CLK);
         `ChkValue("ASO_DATA", ASO_DATA, 16'h7fff);
     end
-    for (int i=1;i<158;i++) begin
+    for (int i=0;i<10;i++) begin
         @(posedge CLK);
     end
-    for (int i=1;i<1024;i++) begin
+    for (int i=0;i<1024;i++) begin
         wait(ASO_VALID);
         @(negedge CLK);
         `ChkValue("ASO_DATA", ASO_DATA, ave_data_rom[i]);
